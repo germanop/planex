@@ -13,6 +13,7 @@ setup(name='planex',
           'console_scripts': [
               'planex-build-mock = planex.mock:_main',
               'planex-cache = planex.cache:_main',
+              'planex-chroot = planex.chroot:_main',
               'planex-clone-sources = planex.clonesources:_main',
               'planex-depend = planex.depend:main',
               'planex-extract = planex.extract:_main',
