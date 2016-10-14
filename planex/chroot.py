@@ -4,7 +4,9 @@ packages.
 """
 
 import argparse
+import getpass
 import sys
+import tempfile
 
 import argcomplete
 
@@ -13,6 +15,26 @@ import planex.spec
 import planex.util
 
 
+def build_container(args):
+    user = getpass.getuser()
+    package = args.package[0]
+    
+    dockerfile = tempfile.NamedTemporaryFile(dir=".")
+    dockerfile.write(
+    """
+    FROM planex-%s
+    MAINTAINER %s
+
+    RUN yum-builddep -y _build/SPECS/%s.spec
+    """
+    % (user, user, package))
+    dockerfile.flush()
+
+    planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, package),
+                     "--force-rm=true", "-f", dockerfile.name, "."])
+
+    dockerfile.close()
+
 def start_container(args):
     """
     Start the docker container with the source directories availble.
@@ -20,13 +42,16 @@ def start_container(args):
     path_maps = []
 
     for package in args.package:
-        # Assuming an unpinned .spec file for now.
-        spec = planex.spec.Spec("SPECS/%s.spec" % (package))
+        # Getting from _build for now.
+        spec = planex.spec.Spec("_build/SPECS/%s.spec" % (package))
         path_maps.append(("myrepos/%s" % (spec.name()),
                           "/build/rpmbuild/BUILD/%s-%s"
                           % (spec.name(), spec.version())))
 
-    planex.util.start_container(path_maps, ("bash",))
+    path_maps.append(("../planex", "/build/myrepos/planex"))
+
+    planex.util.start_container("planex-%s-%s" % (getpass.getuser(), args.package[0]),
+                                path_maps, ("bash",))
 
 
 def parse_args_or_exit(argv=None):
@@ -49,6 +74,7 @@ def main(argv):
     """
     planex.util.setup_sigint_handler()
     args = parse_args_or_exit(argv)
+    build_container(args)
     start_container(args)
 
 
