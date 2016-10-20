@@ -25,15 +25,16 @@ def really_start_container(path_maps, command):
     """
 
     # Add standard path maps
+    path_maps.append((os.getcwd() + "/_obj/var/cache/mock", "/var/cache/mock"))
+    path_maps.append((os.getcwd() + "/_obj/var/cache/yum", "/var/cache/yum"))
     path_maps.append((os.getcwd(), "/build"))
 
-    cmd = ["docker", "run", "--privileged", "--rm", "-i", "-t",
-           "--volumes-from", "planex-persist"]
+    cmd = ["docker", "run", "--privileged", "--rm", "-i", "-t"]
 
     for (local, container) in path_maps:
         cmd += ("-v", "%s:%s" % (os.path.realpath(local), container))
 
-    cmd += ("xenserver/planex:latest",)
+    cmd += (container_name,)
     cmd += command
 
     logging.debug("running command: %s",
