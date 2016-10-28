@@ -51,9 +51,9 @@ def build_container(args):
     FROM planex-%s
     MAINTAINER %s
 
-    RUN yum-builddep -y _build/SPECS/%s.spec
+#    RUN yum-builddep -y /myrepos/%s/xsdevbuild/%s.spec
     """
-    % (user, user, package))
+    % (user, user, package, package))
     dockerfile.flush()
 
     planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, package),
