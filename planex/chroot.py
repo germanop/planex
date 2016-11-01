@@ -121,6 +121,7 @@ def generate_repodata(args):
         
         with open("xs.repo", "w") as repo_conf:
             repo_conf.write(XS_REPO_CITRIX)
+        dockerfile_repo.append("RUN mkdir /etc/yum.repos.d.xs")
         dockerfile_repo.append("COPY xs.repo /etc/yum.repos.d.xs/xs.repo")
     
     # note that we should probably use planex-cache cachedirs syntax...
