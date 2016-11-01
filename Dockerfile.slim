@@ -1,6 +1,10 @@
 FROM repo.citrite.net:5000/planex-master
 MAINTAINER germanop
 
+RUN yum -y install \
+  epel-release \
+  sudo
+
 RUN groupadd build
 RUN useradd build --groups mock,wheel \
               --home-dir ${XSDEVHOME:-/build}   \
