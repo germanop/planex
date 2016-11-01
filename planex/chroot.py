@@ -24,6 +24,8 @@ MAINTAINER %s
 
 %s
 
+RUN yum install -y sudo
+
 # install guilt
 WORKDIR /tmp
 RUN git clone git://repo.or.cz/guilt.git && \
