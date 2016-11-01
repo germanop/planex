@@ -29,10 +29,9 @@ RUN echo 'build ALL=(ALL:ALL) NOPASSWD:ALL' > /etc/sudoers.d/build \
 &&  chmod 440 /etc/sudoers.d/build \
 &&  chown root:root /etc/sudoers.d/build \
 &&  sed -i.bak 's/^Defaults.*requiretty//g' /etc/sudoers \
-&&  groupadd -f -g 1000 build \
-&&  useradd -d /build -u 1000 -g build -m -s /bin/bash build \
+&&  useradd -d /build -u 1000 -g wheel -m -s /bin/bash build \
 &&  passwd -l build \
-&&  usermod -G mock,wheel build \
+&&  usermod -G mock build \
 && :
 
 # install guilt
@@ -46,7 +45,8 @@ RUN git clone git://repo.or.cz/guilt.git && \
 
     ENV XSDEVHOME=/build/myrepos/%s
 
-# RUN yum-builddep -y /myrepos/%s/xsdevbuild/%s.spec
+# This will work only if an XS repository is present
+RUN yum-builddep -y /myrepos/%s/xsdevbuild/%s.spec
 """
 
 
