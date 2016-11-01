@@ -18,6 +18,25 @@ import planex
 import planex.spec
 import planex.util
 
+DOCKERFILE_TEMPLATE="""
+FROM xenserver/planex
+MAINTAINER %s
+
+%s
+
+# install guilt
+WORKDIR /tmp
+RUN git clone git://repo.or.cz/guilt.git && \
+    cd guilt && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -R -f guilt
+
+    ENV XSDEVHOME=/build/myrepos/%s
+
+# RUN yum-builddep -y /myrepos/%s/xsdevbuild/%s.spec
+"""
 
 
 def really_start_container(container_name, path_maps, command):
@@ -84,7 +103,8 @@ gpgcheck = 0
 """
 
 def generate_repodata(args):
-    dockerfile_repo = []
+    dockerfile_repo = ["# yum repo customization"] if args.override or args.local or args.remote else []
+
     if args.override:
         # this is probably not going to be dynamic
         with open("yum.conf.custom", "w") as yum_conf:
@@ -111,34 +131,12 @@ def build_container(args):
     package = args.package[0]
     repodata = generate_repodata(args)
     
-    dockerfile = tempfile.NamedTemporaryFile(dir=".")
-    dockerfile.write("""
-FROM xenserver/planex
-MAINTAINER %s
+    with tempfile.NamedTemporaryFile(dir=".") as dockerfile:
+        dockerfile.write(DOCKERFILE_TEMPLATE % (user, repodata, package, package, package))
+        dockerfile.flush()
+        planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, package),
+                         "--force-rm=true", "-f", dockerfile.name, "."])
 
-# yum repo customization
-%s
-
-# install guilt
-WORKDIR /tmp
-RUN git clone git://repo.or.cz/guilt.git && \
-    cd guilt && \
-    make && \
-    make install && \
-    cd .. && \
-    rm -R -f guilt
-
-    ENV XSDEVHOME=/build/myrepos/%s
-
-# RUN yum-builddep -y /myrepos/%s/xsdevbuild/%s.spec
-""" % (user, repodata, package, package, package))
-
-    dockerfile.flush()
-
-    planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, package),
-                     "--force-rm=true", "-f", dockerfile.name, "."])
-
-    dockerfile.close()
 
 def start_container(args):
     """
