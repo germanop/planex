@@ -135,7 +135,7 @@ def main(argv):
     planex.util.setup_sigint_handler()
     args = parse_args_or_exit(argv)
 
-    spec_file = "_build/SPECS/%s.spec" % (args.package)
+    spec_file = "./%s.spec" % (args.package)
     spec = planex.spec.Spec(spec_file)
 
     args.cmd(spec, args)

@@ -9,13 +9,12 @@ EXTGID=`stat -c %g /build`
 # Create 'build' user in the container to match the owner of the
 # build directory, so that built packages will have the correct
 # owner outside the container.
-groupadd build --gid $EXTGID      \
+groupmod build --gid $EXTGID      \
                --non-unique
-useradd build --groups mock,wheel \
-              --home-dir /build   \
+usermod build --groups mock,wheel \
               --uid $EXTUID       \
               --gid $EXTGID       \
-              --no-create-home    \
+              -d ${XSDEVHOME:-/build} \
               --non-unique
 
 if [ -z "$1" ]; then

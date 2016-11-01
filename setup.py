@@ -22,5 +22,7 @@ setup(name='planex',
               'planex-make-srpm = planex.makesrpm:_main',
               'planex-manifest = planex.manifest:main',
               'planex-pin = planex.pin:_main'
+              'planex-build-mock = planex.mock:_main',
+              'planex-build-chroot = planex.chroot:_main'
           ]
       })

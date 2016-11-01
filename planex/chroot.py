@@ -19,7 +19,7 @@ import planex.spec
 import planex.util
 
 
-def really_start_container(path_maps, command):
+def really_start_container(container_name, path_maps, command):
     """
     Start the planex docker container.
     """
@@ -51,9 +51,18 @@ def build_container(args):
     FROM planex-%s
     MAINTAINER %s
 
+    ENV XSDEVHOME=/build/myrepos/%s
+
+    WORKDIR /tmp
+    RUN git clone git://repo.or.cz/guilt.git && \
+        cd guilt && \
+        make && \
+        make install && \
+        cd .. && \
+        rm -R -f guilt
 #    RUN yum-builddep -y /myrepos/%s/xsdevbuild/%s.spec
     """
-    % (user, user, package, package))
+    % (user, user, package, package, package))
     dockerfile.flush()
 
     planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, package),
