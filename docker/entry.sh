@@ -17,10 +17,7 @@ usermod build --groups mock,wheel \
               -d ${XSDEVHOME:-/build} \
               --non-unique
 
-if [ -n "$DEVTOOLS" ]; then
-    echo 'build ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers
-    passwd -l build
-fi
+passwd -l build
 
 if [ -z "$1" ]; then
     exec su - build

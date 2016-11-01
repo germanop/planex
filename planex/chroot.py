@@ -28,6 +28,7 @@ RUN yum update -y
 
 RUN yum install -y sudo
 RUN echo '%%wheel ALL=(ALL:ALL) ALL' >> /etc/sudoers
+RUN echo 'build ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN sed -i.bak 's/^Defaults.*requiretty//g' /etc/sudoers
 
 # install guilt
@@ -39,8 +40,7 @@ RUN git clone git://repo.or.cz/guilt.git && \
     cd .. && \
     rm -R -f guilt
 
-    ENV XSDEVHOME=/build/myrepos/%s
-    ENV DEVTOOLS=true
+ENV XSDEVHOME=/build/myrepos/%s
 
 # This will work only if an XS repository is present
 RUN yum-builddep -y %s
