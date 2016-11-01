@@ -36,6 +36,7 @@ RUN git clone git://repo.or.cz/guilt.git && \
     rm -R -f guilt
 
     ENV XSDEVHOME=/build/myrepos/%s
+    ENV DEVTOOLS=true
 
 # This will work only if an XS repository is present
 RUN yum-builddep -y %s
