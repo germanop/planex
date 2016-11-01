@@ -24,11 +24,7 @@ RUN yum install -y sudo
 RUN echo 'build ALL=(ALL:ALL) NOPASSWD:ALL' > /etc/sudoers.d/build \
 &&  chmod 440 /etc/sudoers.d/build \
 &&  chown root:root /etc/sudoers.d/build \
-&&  sed -i.bak 's/^Defaults.*requiretty//g' /etc/sudoers \
-&&  useradd -d /build -u 1000 -g wheel -m -s /bin/bash build \
-&&  passwd -l build \
-&&  usermod -G mock build \
-&& :
+&&  sed -i.bak 's/^Defaults.*requiretty//g' /etc/sudoers
 
 # install guilt
 WORKDIR /tmp

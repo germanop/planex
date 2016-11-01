@@ -16,6 +16,7 @@ usermod build --groups mock,wheel \
               --gid $EXTGID       \
               -d ${XSDEVHOME:-/build} \
               --non-unique
+passwd -l build
 
 if [ -z "$1" ]; then
     exec su - build
