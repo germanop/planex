@@ -25,7 +25,10 @@ MAINTAINER %s
 %s
 
 RUN yum update -y
+
 RUN yum install -y sudo
+RUN echo '%wheel ALL=(ALL:ALL) ALL' >> /etc/sudoers
+RUN sed -i.bak 's/^Defaults.*requiretty//g' /etc/sudoers
 
 # install guilt
 WORKDIR /tmp

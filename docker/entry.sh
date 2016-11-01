@@ -18,11 +18,8 @@ usermod build --groups mock,wheel \
               --non-unique
 
 if [ -n "$DEVTOOLS" ]; then
+    echo 'build ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers
     passwd -l build
-    echo 'build ALL=(ALL:ALL) NOPASSWD:ALL' > /etc/sudoers.d/build
-    chmod 440 /etc/sudoers.d/build
-    chown root:root /etc/sudoers.d/build
-    sed -i.bak 's/^Defaults.*requiretty//g' /etc/sudoers
 fi
 
 if [ -z "$1" ]; then
