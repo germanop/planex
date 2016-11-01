@@ -24,6 +24,7 @@ MAINTAINER %s
 
 %s
 
+RUN yum update
 RUN yum install -y sudo
 
 # install guilt
@@ -38,7 +39,7 @@ RUN git clone git://repo.or.cz/guilt.git && \
     ENV XSDEVHOME=/build/myrepos/%s
 
 # This will work only if an XS repository is present
-RUN yum-builddep -y /myrepos/%s/xsdevbuild/%s.spec
+RUN yum-builddep -y %s
 """
 
 
@@ -135,7 +136,7 @@ def build_container(args):
     repodata = generate_repodata(args)
     
     with tempfile.NamedTemporaryFile(dir=".") as dockerfile:
-        dockerfile.write(DOCKERFILE_TEMPLATE % (user, repodata, package, package, package))
+        dockerfile.write(DOCKERFILE_TEMPLATE % (user, repodata, package, package))
         dockerfile.flush()
         
         print "Your Dockerfile has been created. Please wait while the container is generated"
