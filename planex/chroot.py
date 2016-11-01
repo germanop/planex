@@ -121,7 +121,7 @@ def generate_repodata(args):
         dockerfile_repo.append("RUN yum-config-manager --add-repo file://%s" % args.local)
 
     for repo in args.remote:
-        dockerfile_repo.append("RUN yum-config-manager --add-repo {}" % repo)
+        dockerfile_repo.append("RUN yum-config-manager --add-repo %s" % repo)
     
     return "\n".join(dockerfile_repo)
 
