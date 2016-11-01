@@ -20,7 +20,7 @@ MAINTAINER %s
 
 %s
 
-RUN yum update
+RUN yum update -y
 RUN yum install -y sudo
 
 # install guilt
