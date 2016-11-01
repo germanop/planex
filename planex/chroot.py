@@ -25,6 +25,15 @@ MAINTAINER %s
 %s
 
 RUN yum install -y sudo
+RUN echo 'build ALL=(ALL:ALL) NOPASSWD:ALL' > /etc/sudoers.d/build \
+&&  chmod 440 /etc/sudoers.d/build \
+&&  chown root:root /etc/sudoers.d/build \
+&&  sed -i.bak 's/^Defaults.*requiretty//g' /etc/sudoers \
+&&  groupadd -f -g 1000 build \
+&&  useradd -d /build -u 1000 -g build -m -s /bin/bash build \
+&&  passwd -l build \
+&&  usermod -G mock,wheel build \
+&& :
 
 # install guilt
 WORKDIR /tmp
@@ -136,6 +145,8 @@ def build_container(args):
     with tempfile.NamedTemporaryFile(dir=".") as dockerfile:
         dockerfile.write(DOCKERFILE_TEMPLATE % (user, repodata, package, package, package))
         dockerfile.flush()
+        
+        print "Your Dockerfile has been created. Please wait while the container is generated"
         planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, package),
                          "--force-rm=true", "-f", dockerfile.name, "."])
 
