@@ -8,7 +8,10 @@ setup(name='planex',
       version='0.11.0',
       packages=['planex'],
       include_package_data=True,
-      package_data={'planex': ['Makefile.rules']},
+      package_data={
+          'planex': ['Makefile.rules'],
+          'dev-flow': ['default.cfg', 'logging.ini', 'site-defaults.cfg', 'xs.repo', 'yum.conf']
+      },
       entry_points={
           'console_scripts': [
               'planex-build-mock = planex.mock:_main',
