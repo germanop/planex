@@ -173,7 +173,7 @@ def main(argv):
     args = parse_args_or_exit(argv)
     planex.util.setup_logging(args)
     suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
-    tempdir = tempfile.mkdtemp()
+    tempdir = tempfile.mkdtemp(dir=".")
 
     try:
         build_container(args, suffix, tempdir)
