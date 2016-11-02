@@ -69,12 +69,12 @@ def generate_repodata(args, data):
     copy(resource_filename(__name__, 'site-defaults.cfg'), '%s/site-defaults.cfg' % tempdir)
     
     new_repo_template = """
-    [{name}]
-    name = {name}
-    gpgcheck = 0
-    enabled = 1
-    baseurl = {baseurl}
-    """
+[{name}]
+name = {name}
+gpgcheck = 0
+enabled = 1
+baseurl = {baseurl}
+"""
 
     dockerfile_repos = []
     mock_repos = []
