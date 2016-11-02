@@ -150,7 +150,7 @@ def main(argv):
     try:
         build_container(args, suffix, tempdir)
         start_container(args, suffix)
-    except e:
+    except Exception as e:
         print "Something went wrong: %s" % str(e)
     finally:
         print "Cleaning up temp dirs"
