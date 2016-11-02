@@ -26,6 +26,6 @@ RUN git clone git://repo.or.cz/guilt.git && \
     cd .. && \
     rm -R -f guilt
 
-ENV XSDEVHOME=/build/myrepos/{reponame}
+ENV XSDEVHOME=/build/myrepos/
 
 {build-deps}
