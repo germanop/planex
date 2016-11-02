@@ -182,7 +182,7 @@ def main(argv):
         print "Something went wrong: %s" % str(e)
     finally:
         print "Cleaning up temp dirs"
-        rmtree tempdir
+        rmtree(tempdir)
 
 
 def _main():
