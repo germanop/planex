@@ -40,7 +40,7 @@ def generate_repodata(data, args):
     copy(resource_filename(__name__, 'yum.conf'), tempdir)
     copy(resource_filename(__name__, 'xs.repo'), tempdir)
     copy(resource_filename(__name__, 'logging.ini'), tempdir)
-    copy(resource_filename(__name__, 'site_defaults.cfg'), tempdir)
+    copy(resource_filename(__name__, 'site-defaults.cfg'), tempdir)
     
     new_repo_template = """
     [{name}]
