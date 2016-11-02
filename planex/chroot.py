@@ -142,7 +142,7 @@ def start_container(args):
 
     path_maps.append(("../planex", "/build/myrepos/planex"))
 
-    suffix = args.suffix if args.suffix is not None else: uuid4().hex[:5]
+    suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
     
     print("Starting the container")
 
