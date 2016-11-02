@@ -64,10 +64,10 @@ def generate_repodata(data, args):
     
     tempdir = data['tempdir']
 
-    copy(resource_filename(__name__, 'yum.conf'), tempdir)
-    copy(resource_filename(__name__, 'xs.repo'), tempdir)
-    copy(resource_filename(__name__, 'logging.ini'), tempdir)
-    copy(resource_filename(__name__, 'site-defaults.cfg'), tempdir)
+    copy(resource_filename(__name__, 'yum.conf'), '%s/yum.conf' % tempdir)
+    copy(resource_filename(__name__, 'xs.repo'), '%s/xs.repo' % tempdir)
+    copy(resource_filename(__name__, 'logging.ini'), '%s/logging.ini' % tempdir)
+    copy(resource_filename(__name__, 'site-defaults.cfg'), '%s/site-defaults.cfg' % tempdir)
     
     new_repo_template = """
     [{name}]
