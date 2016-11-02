@@ -36,7 +36,6 @@ def create_mock_custom_file(tempdir, custom_mock_repos):
 
     print "Generate custom mockfile on disk: done."
 
-
 def really_start_container(container_name, path_maps, command):
     """
     Start the planex docker container.
@@ -59,7 +58,7 @@ def really_start_container(container_name, path_maps, command):
                   (" ".join([pipes.quote(word) for word in cmd])))
     subprocess.call(cmd)
 
-def generate_repodata(data, args):
+def generate_repodata(args, data):
     """Generate data for custom repos in mock and yum"""
     
     tempdir = data['tempdir']
@@ -104,7 +103,7 @@ def build_container(args, tempdir, suffix):
     """Creates the Dockerfile and run the container"""
     # TODO
     data = {'tempdir': tempdir}
-    data = generate_repodata(data, args)
+    data = generate_repodata(args, data)
     data['maintainer'] = user = getpass.getuser()
 
     build_deps = []
@@ -176,7 +175,7 @@ def main(argv):
     tempdir = tempfile.mkdtemp(dir=".")
 
     try:
-        build_container(args, suffix, tempdir)
+        build_container(args, tempdir, suffix)
         start_container(args, suffix)
     except Exception as e:
         print "Something went wrong: %s" % str(e)
