@@ -86,7 +86,7 @@ def build_container(args, tempdir, suffix):
     data['build-deps'] = "\n".join(build_deps)
 
     with open(resource_filename(__name__, 'Dockerfile')) as dockerfile_template_f:
-        with open("%s/Dockerfile" % tempdir) as dockerfile_f:
+        with open("%s/Dockerfile" % tempdir, "w") as dockerfile_f:
             dockerfile_f.write(dockerfile_template_f.read().format(**data))
            
             print "Create Dockerfile on disk: done."
