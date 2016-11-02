@@ -91,13 +91,13 @@ def generate_repodata(data, args):
         # TODO: infer a decent sanitised string as a name
         mock_repos.append(new_repo_template.format(name=uuid4().hex[:5], baseurl=repo_url))
     
-    dockerfile_data['yum-custom'] = "\n".join(dockerfile_repos)
+    data['yum-custom'] = "\n".join(dockerfile_repos)
 
     create_mock_custom_file(tempdir, mock_repos)
     
     print "Generate repository data: done."
 
-    return dockerfile_data
+    return data
 
 
 def build_container(args, tempdir, suffix):
