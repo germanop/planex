@@ -9,8 +9,9 @@ setup(name='planex',
       packages=['planex'],
       include_package_data=True,
       package_data={
-          'planex': ['Makefile.rules'],
-          'dev-flow': ['default.cfg', 'logging.ini', 'site-defaults.cfg', 'xs.repo', 'yum.conf']
+          'planex': ['Makefile.rules',
+                     'default.cfg', 'logging.ini', 'site-defaults.cfg',
+                     'xs.repo', 'yum.conf']
       },
       entry_points={
           'console_scripts': [
