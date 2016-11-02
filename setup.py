@@ -11,7 +11,8 @@ setup(name='planex',
       package_data={
           'planex': ['Makefile.rules',
                      'default.cfg', 'logging.ini', 'site-defaults.cfg',
-                     'xs.repo', 'yum.conf']
+                     'xs.repo', 'yum.conf',
+                     'Dockerfile']
       },
       entry_points={
           'console_scripts': [
