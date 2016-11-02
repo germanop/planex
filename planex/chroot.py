@@ -13,7 +13,7 @@ import sys
 import tempfile
 
 from pkg_resources import resource_filename
-from os import remove
+from shutil import copy, rmtree
 from uuid import uuid4
 
 import argcomplete
@@ -21,20 +21,21 @@ import planex
 import planex.spec
 import planex.util
 
-def create_mock_custom_file(repodata, custom_mock_repos):
+def create_mock_custom_file(tempdir, custom_mock_repos):
     """Write mock-custom to disk"""
-    with open(repodata['xs-repo']) as _xs_repo_f:
+    with open(resource_filename(__name__, 'xs.repo')) as _xs_repo_f:
         default_repos = _xs_repo_f.read()
 
-    with open(repodata['mock-default-cfg']) as _default_cfg_f:
+    with open(resource_filename(__name__, 'default.cfg')) as _default_cfg_f:
         _mock_custom = _default_cfg_f.read().format(
             defaults=default_repos,
             custom="\n".join(custom_mock_repos)
             )
-        with open('mock-custom', 'w') as mock_custom_f:
+        with open('%s/default.cfg' % tempdir, 'w') as mock_custom_f:
             mock_custom_f.write(_mock_custom)
 
     print "Generate custom mockfile on disk: done."
+
 
 def really_start_container(container_name, path_maps, command):
     """
@@ -58,18 +59,16 @@ def really_start_container(container_name, path_maps, command):
                   (" ".join([pipes.quote(word) for word in cmd])))
     subprocess.call(cmd)
 
-def generate_repodata(args):
+def generate_repodata(data, args):
     """Generate data for custom repos in mock and yum"""
+    
+    tempdir = data['tempdir']
 
-    # this will have to be made more modular
-    repodata = {
-        'yum-conf': resource_filename(__name__, 'yum.conf'),
-        'xs-repo': resource_filename(__name__, 'xs.repo'),
-        'mock-default-cfg': resource_filename(__name__, 'default.cfg'),
-        'logging-ini': resource_filename(__name__, 'logging.ini'),
-        'site-defaults-cfg': resource_filename(__name__, 'site_defaults.cfg')
-    }
-
+    copy(resource_filename(__name__, 'yum.conf'), tempdir)
+    copy(resource_filename(__name__, 'xs.repo'), tempdir)
+    copy(resource_filename(__name__, 'logging.ini'), tempdir)
+    copy(resource_filename(__name__, 'site_defaults.cfg'), tempdir)
+    
     new_repo_template = """
     [{name}]
     name = {name}
@@ -92,18 +91,20 @@ def generate_repodata(args):
         # TODO: infer a decent sanitised string as a name
         mock_repos.append(new_repo_template.format(name=uuid4().hex[:5], baseurl=repo_url))
     
-    repodata['yum-custom'] = "\n".join(dockerfile_repos)
+    dockerfile_data['yum-custom'] = "\n".join(dockerfile_repos)
 
-    create_mock_custom_file(repodata, mock_repos)
+    create_mock_custom_file(tempdir, mock_repos)
     
     print "Generate repository data: done."
 
-    return repodata
+    return dockerfile_data
 
 
-def build_container(args, suffix):
+def build_container(args, tempdir, suffix):
     """Creates the Dockerfile and run the container"""
-    data = generate_repodata(args)
+    # TODO
+    data = {'tempdir': tempdir}
+    data = generate_repodata(data, args)
     data['maintainer'] = user = getpass.getuser()
 
     build_deps = []
@@ -112,20 +113,15 @@ def build_container(args, suffix):
     data['build-deps'] = "\n".join(build_deps)
 
     with open(resource_filename(__name__, 'Dockerfile')) as dockerfile_template_f:
-        with tempfile.NamedTemporaryFile(dir=".") as dockerfile_f:
+        with open("%s/Dockerfile" % tempdir) as dockerfile_f:
             dockerfile_f.write(dockerfile_template_f.read().format(**data))
-            dockerfile_f.flush()
-
+           
             print "Create Dockerfile on disk: done."
-            print "Please wait while the image is generated"
-
-            planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, suffix),
-                             "--force-rm=true", "-f", dockerfile.name, "."])
     
-    # container has been created, we can remove mock-custom
-    # TODO: use a global temp folder instead, and delete it after generation is complete
-    remove('mock-custom')
-
+    print "Please wait while the image is generated"
+    planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, suffix),
+                     "--force-rm=true", "-f", "%s/Dockerfile" % tempdir, "."])
+    
 
 def start_container(args, suffix):
     """
@@ -172,12 +168,21 @@ def main(argv):
     """
     Entry point
     """
+
     planex.util.setup_sigint_handler()
     args = parse_args_or_exit(argv)
     planex.util.setup_logging(args)
     suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
-    build_container(args, suffix)
-    start_container(args, suffix)
+    tempdir = tempfile.mkdtemp()
+
+    try:
+        build_container(args, suffix, tempdir)
+        start_container(args, suffix)
+    except e:
+        print "Something went wrong: %s" % str(e)
+    finally:
+        print "Cleaning up temp dirs"
+        rmtree tempdir
 
 
 def _main():

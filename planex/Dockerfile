@@ -1,14 +1,14 @@
 FROM xenserver/planex
 MAINTAINER {maintainer}
 
-COPY {yum-conf} /etc/yum.conf
+COPY {tempdir}/yum.conf /etc/yum.conf
 RUN mkdir /etc/yum.repos.d.xs
-COPY {xs-repo} /etc/yum.repos.d.xs/xs.repo
+COPY {tempdir}/xs.repo /etc/yum.repos.d.xs/xs.repo
 {yum-custom}
 
-COPY {logging-ini} /etc/mock/logging.ini
-COPY {site-defaults-cfg} /etc/mock/site-defaults.cfg
-COPY mock-custom /etc/mock/default.cfg
+COPY {tempdir}/logging.ini /etc/mock/logging.ini
+COPY {tempdir}/site-defaults.cfg /etc/mock/site-defaults.cfg
+COPY {tempdir}/default.cfg /etc/mock/default.cfg
 
 RUN yum update -y
 
