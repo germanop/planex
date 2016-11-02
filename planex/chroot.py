@@ -145,7 +145,7 @@ def main(argv):
     planex.util.setup_sigint_handler()
     args = parse_args_or_exit(argv)
     suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
-    tempdir = tempfile.mkdtemp()
+    tempdir = tempfile.mkdtemp(dir=".")
 
     try:
         build_container(args, suffix, tempdir)
