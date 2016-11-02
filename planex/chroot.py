@@ -75,10 +75,10 @@ def generate_repodata(args):
     return repodata
 
 
-def build_container(args):
+def build_container(args, suffix):
     """Creates the Dockerfile and run the container"""
     data = generate_repodata(args)
-    data['maintainer'] = getpass.getuser()
+    data['maintainer'] = user = getpass.getuser()
 
     build_deps = []
     for spec in args.package:
@@ -93,7 +93,7 @@ def build_container(args):
             print "Create Dockerfile on disk: done."
             print "Please wait while the image is generated"
 
-            planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, package),
+            planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, suffix),
                              "--force-rm=true", "-f", dockerfile.name, "."])
     
     # container has been created, we can remove mock-custom
@@ -101,7 +101,7 @@ def build_container(args):
     remove('mock-custom')
 
 
-def start_container(args):
+def start_container(args, suffix):
     """
     Start the docker container with the source directories availble.
     """
@@ -115,8 +115,6 @@ def start_container(args):
                           % (spec.name(), spec.version())))
 
     path_maps.append(("../planex", "/build/myrepos/planex"))
-
-    suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
     
     print("Starting the container")
 
@@ -150,8 +148,9 @@ def main(argv):
     """
     planex.util.setup_sigint_handler()
     args = parse_args_or_exit(argv)
-    build_container(args)
-    start_container(args)
+    suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
+    build_container(args, suffix)
+    start_container(args, suffix)
 
 
 def _main():
