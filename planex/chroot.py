@@ -21,6 +21,12 @@ import planex
 import planex.spec
 import planex.util
 
+# TODO: 
+#  - generate git config in the repo
+#  - use correct guilt version
+#  - prepare SPECS and SOURCES content
+#  - ???
+
 def create_mock_custom_file(tempdir, custom_mock_repos):
     """Write mock-custom to disk"""
     with open(resource_filename(__name__, 'xs.repo')) as _xs_repo_f:
@@ -151,7 +157,7 @@ def parse_args_or_exit(argv=None):
     Start a docker container for developer builds of packages.
     """)
     planex.util.add_common_parser_options(parser)
-    parser.add_argument("package", nargs="*", default = [],
+    parser.add_argument("package", nargs="*", action="append", default = [],
                         help="path to specfile whose build dependencies should be installed in container")
     parser.add_argument("--local",
                         help="absolute path to the local repo (gpgcheck disabled)")
