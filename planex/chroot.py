@@ -175,9 +175,9 @@ def parse_args_or_exit(argv=None):
                         help="uri of the remote repo (gpgcheck disabled)")
     parser.add_argument("--suffix",
                         help="container name suffix")
-    parser.add_argument("--keeptmp", action="store_true",
+    parser.add_argument("--keeptmp", action="store_true", default=False,
                         help="keep temporary files")
-    parser.add_argument("--guilt", action="store_true",
+    parser.add_argument("--guilt", action="store_true", default=False,
                         help="install guilt in the chroot (git config is \
                              not yet generated)")
     argcomplete.autocomplete(parser)
