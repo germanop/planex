@@ -22,12 +22,24 @@ import planex.spec
 import planex.util
 
 # TODO: 
-#  - generate git config in the repo
-#  - use correct guilt version
+#  - generate git config in the repo  <-- bad idea. The user should work from own
+#  - use correct guilt version        <-- (external) environment and use the
+#                                         container only for compilation and test
 #  - prepare SPECS and SOURCES content
 #  - ???
 
-def create_mock_custom_file(tempdir, custom_mock_repos):
+def copy_configuration_templates(tempdir):
+    """Copy template files that need to be included in the docker image"""
+    
+    copy(resource_filename(__name__, 'yum.conf'), '%s/yum.conf' % tempdir)
+    copy(resource_filename(__name__, 'xs.repo'), '%s/xs.repo' % tempdir)
+    copy(resource_filename(__name__, 'logging.ini'), '%s/logging.ini' % tempdir)
+    copy(resource_filename(__name__, 'site-defaults.cfg'), '%s/site-defaults.cfg' % tempdir)
+
+    print "Template files copied"
+
+
+def create_custom_mock_config(tempdir, custom_mock_repos):
     """Write mock-custom to disk"""
     with open(resource_filename(__name__, 'xs.repo')) as _xs_repo_f:
         default_repos = _xs_repo_f.read()
@@ -41,6 +53,7 @@ def create_mock_custom_file(tempdir, custom_mock_repos):
             mock_custom_f.write(_mock_custom)
 
     print "Generate custom mockfile on disk: done."
+
 
 def really_start_container(container_name, path_maps, command):
     """
@@ -64,15 +77,9 @@ def really_start_container(container_name, path_maps, command):
                   (" ".join([pipes.quote(word) for word in cmd])))
     subprocess.call(cmd)
 
+
 def generate_repodata(args, data):
     """Generate data for custom repos in mock and yum"""
-    
-    tempdir = data['tempdir']
-
-    copy(resource_filename(__name__, 'yum.conf'), '%s/yum.conf' % tempdir)
-    copy(resource_filename(__name__, 'xs.repo'), '%s/xs.repo' % tempdir)
-    copy(resource_filename(__name__, 'logging.ini'), '%s/logging.ini' % tempdir)
-    copy(resource_filename(__name__, 'site-defaults.cfg'), '%s/site-defaults.cfg' % tempdir)
     
     new_repo_template = """
 [{name}]
@@ -98,7 +105,7 @@ baseurl = {baseurl}
     
     data['yum-custom'] = "\n".join(dockerfile_repos)
 
-    create_mock_custom_file(tempdir, mock_repos)
+    create_custom_mock_config(data['tempdir'], mock_repos)
     
     print "Generate repository data: done."
 
@@ -134,16 +141,7 @@ def start_container(args, suffix):
     """
     path_maps = []
 
-    for package in args.package:
-        # Getting from _build for now.
-        spec = planex.spec.Spec(package)
-        path_maps.append(("myrepos/%s" % (spec.name()),
-                          "/build/rpmbuild/BUILD/%s-%s"
-                          % (spec.name(), spec.version())))
-
-    path_maps.append(("../planex", "/build/myrepos/planex"))
-    
-    print("Starting the container")
+    print("Starting the container...")
 
     really_start_container("planex-%s-%s" % (getpass.getuser(), suffix),
                                 path_maps, ("bash",))
@@ -158,13 +156,17 @@ def parse_args_or_exit(argv=None):
     """)
     planex.util.add_common_parser_options(parser)
     parser.add_argument("package", nargs="*", action="append", default = [],
-                        help="path to specfile whose build dependencies should be installed in container")
+                        help="path to specfile whose build dependencies \
+                              should be installed in container")
     parser.add_argument("--local",
-                        help="absolute path to the local repo (gpgcheck disabled)")
+                        help="absolute path to the local repo \
+                             (gpgcheck disabled)")
     parser.add_argument("--remote", action="append", default=[],
                         help="uri of the remote repo (gpgcheck disabled)")
     parser.add_argument("--suffix",
                         help="container name suffix")
+    parser.add_argument("--keeptmp", action="store_true",
+                        help="keep temporary files")
     argcomplete.autocomplete(parser)
     return parser.parse_args(argv)
 
@@ -181,13 +183,18 @@ def main(argv):
     tempdir = tempfile.mkdtemp(dir=".")
 
     try:
+        copy_configuration_templates(tempdir)
         build_container(args, tempdir, suffix)
         start_container(args, suffix)
     except Exception as e:
         print "Something went wrong: %s" % str(e)
     finally:
-        print "Cleaning up temp dirs"
-        rmtree(tempdir)
+        if not argv.keeptmp:
+            print "Cleaning up temp dirs"
+            rmtree(tempdir)
+        else:
+            print "--keeptmp flag detected. \
+                   The template files can be found in %s" % tempdir
 
 
 def _main():
