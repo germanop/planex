@@ -230,7 +230,7 @@ def main(argv):
     except Exception as e:
         print "Something went wrong: %s" % str(e)
     finally:
-        if not argv.keeptmp:
+        if not args.keeptmp:
             print "Cleaning up temp dirs"
             rmtree(tempdir)
         else:
