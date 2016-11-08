@@ -38,6 +38,11 @@ MOCK_FLAGS ?= ${QUIET+--quiet} \
 DEPEND ?= planex-depend
 DEPEND_FLAGS ?= $(RPM_DEFINES) --pins-dir $(PINSDIR) $(DEPEND_EXTRA_FLAGS)
 
+
+PLANEXPARSE ?= planex-parse
+include $(TOPDIR)/Makefile.branch
+#PLANEXPARSEOPT ?= 
+
 ifdef QUIET
 AT = @
 endif
@@ -76,8 +81,12 @@ $(TOPDIR):
 # Placeholder
 $(TOPDIR)/SPECS/%.spec: SPECS/%.spec
 	@mkdir -p $(dir $@)
-	@cp -lf $^ $@
+	$(AT)$(PLANEXPARSE) $(PLANEXPARSEOPT) $< $@
 
+# Generate proper lnk files
+$(TOPDIR)/SPECS/%.lnk: SPECS/%.lnk
+	@mkdir -p $(dir $@)
+	$(AT)$(PLANEXPARSE) $(PLANEXPARSEOPT) $< $@
 
 ############################################################################
 # Source download rules
@@ -91,7 +100,7 @@ $(TOPDIR)/SPECS/%.spec: SPECS/%.spec
 
 # Fetch a patch tarball listed in a link file.
 .PRECIOUS: SOURCES/%/patches.tar
-SOURCES/%/patches.tar: SPECS/%.lnk
+SOURCES/%/patches.tar: $(TOPDIR)/SPECS/%.lnk
 	$(AT)$(FETCH) $(FETCH_FLAGS) $< $@
 
 
@@ -99,10 +108,14 @@ SOURCES/%/patches.tar: SPECS/%.lnk
 # Patch extraction rules
 ############################################################################
 
-# Extract a spec file from a patch tarball.
-$(TOPDIR)/SPECS/%.spec: SPECS/%.lnk SOURCES/%/patches.tar
+# Extract a tmp spec file from a patch tarball.
+$(TOPDIR)/SPECS/tmp/%.spec: $(TOPDIR)/SPECS/%.lnk SOURCES/%/patches.tar
+	@mkdir -p $(dir $@)
 	$(AT)$(EXTRACT) $(EXTRACT_FLAGS) --output $@ --link $^
 
+# Get the right spec file
+$(TOPDIR)/SPECS/%.spec: $(TOPDIR)/SPECS/tmp/%.spec
+	$(AT)$(PLANEXPARSE) $(PLANEXPARSEOPT) $< $@
 
 ############################################################################
 # RPM build rules
