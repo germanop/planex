@@ -36,7 +36,7 @@ def copy_configuration_templates(tempdir):
     print "Template files copied"
 
 
-def prepare_specfiles(tempdir):
+def prepare_specfiles(args, tempdir):
     """Creates a SPECS folder in the tempdir that is mounted in the container
        in the folder /SPECS"""
 
@@ -195,7 +195,7 @@ def main(argv):
     tempdir = tempfile.mkdtemp(dir=".")
 
     try:
-        prepare_specfiles(tempdir)
+        prepare_specfiles(args, tempdir)
         copy_configuration_templates(tempdir)
         build_container(args, tempdir, suffix)
         start_container(suffix)
