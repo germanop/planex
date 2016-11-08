@@ -192,7 +192,7 @@ def parse_args_or_exit(argv=None):
     Start a docker container for developer builds of packages.
     """)
     planex.util.add_common_parser_options(parser)
-    parser.add_argument("package", nargs="*", action="append", default = [],
+    parser.add_argument("package", nargs="*",
                         help="path to specfile whose build dependencies \
                               should be installed in container")
     parser.add_argument("--local",
