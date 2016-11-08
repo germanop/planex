@@ -13,6 +13,7 @@ import sys
 import tempfile
 
 from pkg_resources import resource_filename
+from os import mkdir, path
 from shutil import copy, rmtree
 from uuid import uuid4
 
@@ -25,18 +26,33 @@ import planex.util
 #  - generate git config in the repo  <-- bad idea. The user should work from own
 #  - use correct guilt version        <-- (external) environment and use the
 #                                         container only for compilation and test
-#  - prepare SPECS and SOURCES content
+#  - prepare SOURCES content
 #  - ???
 
 def copy_configuration_templates(tempdir):
     """Copy template files that need to be included in the docker image"""
-    
+
     copy(resource_filename(__name__, 'yum.conf'), '%s/yum.conf' % tempdir)
     copy(resource_filename(__name__, 'xs.repo'), '%s/xs.repo' % tempdir)
     copy(resource_filename(__name__, 'logging.ini'), '%s/logging.ini' % tempdir)
     copy(resource_filename(__name__, 'site-defaults.cfg'), '%s/site-defaults.cfg' % tempdir)
 
     print "Template files copied"
+
+
+def prepare_specfiles(tempdir):
+    """Creates a SPECS folder in the tempdir that is mounted in the container
+       in the folder /SPECS"""
+
+    # We do not try..except OSError because the folder should not be present yet
+    specdir = "%s/SPECS" % tempdir
+    mkdir(specdir)
+
+    for specfile in args.package:
+        specname = path.basename(specfile)
+        copy(spec, "%s/%s" % specdir, specname)
+
+    print "SPECS folder generated"
 
 
 def create_custom_mock_config(tempdir, custom_mock_repos):
@@ -80,7 +96,8 @@ def really_start_container(container_name, path_maps, command):
 
 def generate_repodata(args, data):
     """Generate data for custom repos in mock and yum"""
-    
+
+    # do not indent or it fails to be a valid repository entry
     new_repo_template = """
 [{name}]
 name = {name}
@@ -102,14 +119,33 @@ baseurl = {baseurl}
         dockerfile_repos.append("RUN yum-config-manager -y --add-repo %s" % repo_url)
         # TODO: infer a decent sanitised string as a name
         mock_repos.append(new_repo_template.format(name=uuid4().hex[:5], baseurl=repo_url))
-    
+
     data['yum-custom'] = "\n".join(dockerfile_repos)
 
     create_custom_mock_config(data['tempdir'], mock_repos)
-    
+
     print "Generate repository data: done."
 
     return data
+
+
+def add_guilt(flag):
+    """Install guilt in the container if flag is true"""
+    # TODO: this should also create a .gitconfig for the container with
+    #       the user's git user/email or add an ENV to create it in entry.sh
+
+    guilt_docker_template = """
+WORKDIR /tmp
+RUN git clone git://repo.or.cz/guilt.git && \
+    cd guilt && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -R -f guilt
+"""
+
+    return guilt_docker_template if flag else ""
+
 
 
 def build_container(args, tempdir, suffix):
@@ -117,6 +153,7 @@ def build_container(args, tempdir, suffix):
     # TODO
     data = {'tempdir': tempdir}
     data = generate_repodata(args, data)
+    data['add-guilt'] = add_guilt(args.guilt)
     data['maintainer'] = user = getpass.getuser()
 
     build_deps = []
@@ -167,6 +204,9 @@ def parse_args_or_exit(argv=None):
                         help="container name suffix")
     parser.add_argument("--keeptmp", action="store_true",
                         help="keep temporary files")
+    parser.add_argument("--guilt", action="store_true",
+                        help="install guilt in the chroot (git config is \
+                             not yet generated)")
     argcomplete.autocomplete(parser)
     return parser.parse_args(argv)
 
@@ -183,6 +223,7 @@ def main(argv):
     tempdir = tempfile.mkdtemp(dir=".")
 
     try:
+        prepare_specfiles(tempdir)
         copy_configuration_templates(tempdir)
         build_container(args, tempdir, suffix)
         start_container(args, suffix)
