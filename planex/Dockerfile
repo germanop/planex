@@ -1,6 +1,8 @@
 FROM xenserver/planex
 MAINTAINER {maintainer}
 
+COPY {tempdir}/SPECS /SPECS
+
 COPY {tempdir}/yum.conf /etc/yum.conf
 RUN mkdir /etc/yum.repos.d.xs
 COPY {tempdir}/xs.repo /etc/yum.repos.d.xs/xs.repo
@@ -17,14 +19,7 @@ RUN echo '%wheel ALL=(ALL:ALL) ALL' >> /etc/sudoers
 RUN echo 'build ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN sed -i.bak 's/^Defaults.*requiretty//g' /etc/sudoers
 
-# install guilt
-WORKDIR /tmp
-RUN git clone git://repo.or.cz/guilt.git && \
-    cd guilt && \
-    make && \
-    make install && \
-    cd .. && \
-    rm -R -f guilt
+{add-guilt}
 
 ENV XSDEVHOME=/build/myrepos/
 
