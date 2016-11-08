@@ -50,7 +50,7 @@ def prepare_specfiles(args, tempdir):
 
     for specfile in args.package:
         specname = path.basename(specfile)
-        copy(spec, "%s/%s" % specdir, specname)
+        copy(spec, "%s/%s" % (specdir, specname))
 
     print "SPECS folder generated"
 
