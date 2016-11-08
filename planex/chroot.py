@@ -172,7 +172,7 @@ def build_container(args, tempdir, suffix):
                      "--force-rm=true", "-f", "%s/Dockerfile" % tempdir, "."])
     
 
-def start_container(args, suffix):
+def start_container(suffix):
     """
     Start the docker container with the source directories availble.
     """
@@ -226,7 +226,7 @@ def main(argv):
         prepare_specfiles(tempdir)
         copy_configuration_templates(tempdir)
         build_container(args, tempdir, suffix)
-        start_container(args, suffix)
+        start_container(suffix)
     except Exception as e:
         print "Something went wrong: %s" % str(e)
     finally:
