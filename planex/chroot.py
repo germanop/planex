@@ -214,10 +214,9 @@ def main(argv):
 
     planex.util.setup_sigint_handler()
     args = parse_args_or_exit(argv)
-    suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
-
     try:
         if args.container is not None:
+            suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
             tempdir = tempfile.mkdtemp(dir=".")
             prepare_specfiles(args, tempdir)
             copy_configuration_templates(tempdir)
