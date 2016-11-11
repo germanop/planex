@@ -201,6 +201,7 @@ def parse_args_or_exit(argv=None):
                             help="install guilt in the chroot (git config is \
                                 not yet generated) [likely to be deprecated \
                                 in the near future]")
+
     argcomplete.autocomplete(parser)
     return parser.parse_args(argv)
 
