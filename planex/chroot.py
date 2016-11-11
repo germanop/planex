@@ -244,7 +244,7 @@ def main(argv):
     planex.util.setup_logging(args)
 
     try:
-        if args.container is not None:
+        if args.container is None:
             suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
             tempdir = tempfile.mkdtemp(dir=".")
             prepare_specfiles(args, tempdir)
@@ -256,7 +256,7 @@ def main(argv):
     except Exception as exn:
         print("Something went wrong: %s" % str(exn))
     finally:
-        if args.container is not None:
+        if args.container is None:
             if not args.keeptmp:
                 print("Cleaning up temp dirs")
                 rmtree(tempdir)
