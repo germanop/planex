@@ -211,7 +211,7 @@ def parse_args_or_exit(argv=None):
     subparsers = parser.add_subparsers()
 
     run_parser = subparsers.add_parser("run")
-    run_parser.add_argument("container", nargs="1",
+    run_parser.add_argument("container",
                             help="name of an existing docker image to run")
 
     new_parser = subparsers.add_parser("new")
