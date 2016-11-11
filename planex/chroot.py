@@ -177,10 +177,8 @@ def parse_args_or_exit(argv=None):
     parser = argparse.ArgumentParser(description="""
     Start a docker container for developer builds of packages.
     """)
+
     planex.util.add_common_parser_options(parser)
-    parser.add_argument("package", nargs="*",
-                        help="path to specfile whose build dependencies \
-                              should be installed in container")
     subparsers = parser.add_subparsers()
 
     run_parser = subparsers.add_parser("run")
@@ -188,6 +186,9 @@ def parse_args_or_exit(argv=None):
                             help="name of an existing docker image to run")
 
     new_parser = subparsers.add_parser("new")
+    new_parser.add_argument("package", nargs="*",
+                            help="path to specfile whose build dependencies \
+                                should be installed in container")
     new_parser.add_argument("--local",
                             help="absolute path to the local repo \
                                 (gpgcheck disabled)")
