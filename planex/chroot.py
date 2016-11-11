@@ -2,13 +2,13 @@
 planex-chroot: Start a docker container for developer builds of
 packages.
 """
+from __future__ import print_function
 
 import argparse
 import getpass
 import sys
 import tempfile
 
-from pkg_resources import resource_filename
 from os import mkdir, path
 from shutil import copy, rmtree
 from uuid import uuid4
@@ -18,27 +18,35 @@ import planex
 import planex.spec
 import planex.util
 
-# TODO: 
+from pkg_resources import resource_filename
+
+# TODO:
 #  - generate git config in the repo  <-- bad idea. The user should work from own
 #  - use correct guilt version        <-- (external) environment and use the
 #                                         container only for compilation and test
 #  - prepare SOURCES content
+#  - fix local repo
+#  - improve planex-make to be able to shortcircuit the RPM creation
 #  - ???
 
 def copy_configuration_templates(tempdir):
-    """Copy template files that need to be included in the docker image"""
+    """
+    Copy template files that need to be included in the docker image
+    """
 
     copy(resource_filename(__name__, 'yum.conf'), '%s/yum.conf' % tempdir)
     copy(resource_filename(__name__, 'xs.repo'), '%s/xs.repo' % tempdir)
     copy(resource_filename(__name__, 'logging.ini'), '%s/logging.ini' % tempdir)
     copy(resource_filename(__name__, 'site-defaults.cfg'), '%s/site-defaults.cfg' % tempdir)
 
-    print "Template files copied"
+    print("Template files copied")
 
 
 def prepare_specfiles(args, tempdir):
-    """Creates a SPECS folder in the tempdir that is mounted in the container
-       in the folder /SPECS"""
+    """
+    Creates a SPECS folder in the tempdir that is mounted in the container
+    in the folder /SPECS
+    """
 
     # We do not try..except OSError because the folder should not be present yet
     specdir = "%s/SPECS" % tempdir
@@ -46,13 +54,15 @@ def prepare_specfiles(args, tempdir):
 
     for specfile in args.package:
         specname = path.basename(specfile)
-        copy(spec, "%s/%s" % (specdir, specname))
+        copy(specfile, "%s/%s" % (specdir, specname))
 
-    print "SPECS folder generated"
+    print("SPECS folder generated")
 
 
 def create_custom_mock_config(tempdir, custom_mock_repos):
-    """Write mock-custom to disk"""
+    """
+    Write mock-custom to disk
+    """
     with open(resource_filename(__name__, 'xs.repo')) as _xs_repo_f:
         default_repos = _xs_repo_f.read()
 
@@ -64,11 +74,13 @@ def create_custom_mock_config(tempdir, custom_mock_repos):
         with open('%s/default.cfg' % tempdir, 'w') as mock_custom_f:
             mock_custom_f.write(_mock_custom)
 
-    print "Generate custom mockfile on disk: done."
+    print("Generate custom mockfile on disk: done.")
 
 
 def generate_repodata(args, data):
-    """Generate data for custom repos in mock and yum"""
+    """
+    Generate data for custom repos in mock and yum
+    """
 
     # do not indent or it fails to be a valid repository entry
     new_repo_template = """
@@ -83,27 +95,29 @@ baseurl = {baseurl}
     mock_repos = []
 
     if args.local:
-        # TODO: check that the url is absolute
+        # TODO: hardlink the local repo in the current folder and mount it in
+        #       the local /REPOS folder
         _baseurl = "file://%s" % args.local
         dockerfile_repos.append("RUN yum-config-manager -y --add-repo %s" % _baseurl)
         mock_repos.append(new_repo_template.format(name="local", baseurl=_baseurl))
 
     for repo_url in args.remote:
         dockerfile_repos.append("RUN yum-config-manager -y --add-repo %s" % repo_url)
-        # TODO: infer a decent sanitised string as a name
         mock_repos.append(new_repo_template.format(name=uuid4().hex[:5], baseurl=repo_url))
 
     data['yum-custom'] = "\n".join(dockerfile_repos)
 
     create_custom_mock_config(data['tempdir'], mock_repos)
 
-    print "Generate repository data: done."
+    print("Generate repository data: done.")
 
     return data
 
 
 def add_guilt(flag):
-    """Install guilt in the container if flag is true"""
+    """
+    Install guilt in the container if flag is true
+    """
     # TODO: this should also create a .gitconfig for the container with
     #       the user's git user/email or add an ENV to create it in entry.sh
 
@@ -120,10 +134,10 @@ RUN git clone git://repo.or.cz/guilt.git && \
     return guilt_docker_template if flag else ""
 
 
-
 def build_container(args, tempdir, suffix):
-    """Creates the Dockerfile and run the container"""
-    # TODO
+    """
+    Creates the Dockerfile and build the container. Return the container name
+    """
     data = {'tempdir': tempdir}
     data = generate_repodata(args, data)
     data['add-guilt'] = add_guilt(args.guilt)
@@ -137,24 +151,23 @@ def build_container(args, tempdir, suffix):
     with open(resource_filename(__name__, 'Dockerfile')) as dockerfile_template_f:
         with open("%s/Dockerfile" % tempdir, "w") as dockerfile_f:
             dockerfile_f.write(dockerfile_template_f.read().format(**data))
-           
-            print "Create Dockerfile on disk: done."
-    
-    print "Please wait while the image is generated"
-    planex.util.run(["docker", "build", "-t", "planex-%s-%s" % (user, suffix),
-                     "--force-rm=true", "-f", "%s/Dockerfile" % tempdir, "."])
-    
+        print("Create Dockerfile on disk: done.")
 
-def start_container(suffix):
+    container_name = "planex-%s-%s" % (user, suffix)
+    print("Please wait while '%s' is generated" % container_name)
+
+    planex.util.run(["docker", "build", "-t", container_name,
+                     "--force-rm=true", "-f", "%s/Dockerfile" % tempdir, "."])
+    return container_name
+
+
+def start_container(container_name):
     """
-    Start the docker container with the source directories availble.
+    Start the docker container.
     """
     path_maps = []
-
-    print("Starting the container...")
-
-    planex.util.start_container("planex-%s-%s" % (getpass.getuser(), suffix),
-                                path_maps, ("bash",))
+    print("Starting container '%s'..." % container_name)
+    planex.util.start_container(container_name, path_maps, ("bash",))
 
 
 def parse_args_or_exit(argv=None):
@@ -168,18 +181,26 @@ def parse_args_or_exit(argv=None):
     parser.add_argument("package", nargs="*",
                         help="path to specfile whose build dependencies \
                               should be installed in container")
-    parser.add_argument("--local",
-                        help="absolute path to the local repo \
-                             (gpgcheck disabled)")
-    parser.add_argument("--remote", action="append", default=[],
-                        help="uri of the remote repo (gpgcheck disabled)")
-    parser.add_argument("--suffix",
-                        help="container name suffix")
-    parser.add_argument("--keeptmp", action="store_true", default=False,
-                        help="keep temporary files")
-    parser.add_argument("--guilt", action="store_true", default=False,
-                        help="install guilt in the chroot (git config is \
-                             not yet generated)")
+    subparsers = parser.add_subparsers()
+
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("container", nargs="1",
+                            help="name of an existing docker image to run")
+
+    new_parser = subparsers.add_parser("new")
+    new_parser.add_argument("--local",
+                            help="absolute path to the local repo \
+                                (gpgcheck disabled)")
+    new_parser.add_argument("--remote", action="append", default=[],
+                            help="uri of the remote repo (gpgcheck disabled)")
+    new_parser.add_argument("--suffix",
+                            help="container name suffix")
+    new_parser.add_argument("--keeptmp", action="store_true", default=False,
+                            help="keep temporary files")
+    new_parser.add_argument("--guilt", action="store_true", default=False,
+                            help="install guilt in the chroot (git config is \
+                                not yet generated) [likely to be deprecated \
+                                in the near future]")
     argcomplete.autocomplete(parser)
     return parser.parse_args(argv)
 
@@ -192,22 +213,26 @@ def main(argv):
     planex.util.setup_sigint_handler()
     args = parse_args_or_exit(argv)
     suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
-    tempdir = tempfile.mkdtemp(dir=".")
 
     try:
-        prepare_specfiles(args, tempdir)
-        copy_configuration_templates(tempdir)
-        build_container(args, tempdir, suffix)
-        start_container(suffix)
-    except Exception as e:
-        print "Something went wrong: %s" % str(e)
-    finally:
-        if not args.keeptmp:
-            print "Cleaning up temp dirs"
-            rmtree(tempdir)
+        if args.container is not None:
+            tempdir = tempfile.mkdtemp(dir=".")
+            prepare_specfiles(args, tempdir)
+            copy_configuration_templates(tempdir)
+            container_name = build_container(args, tempdir, suffix)
         else:
-            print "--keeptmp flag detected. \
-                   The template files can be found in %s" % tempdir
+            container_name = args.container
+        start_container(container_name)
+    except Exception as exn:
+        print("Something went wrong: %s" % str(exn))
+    finally:
+        if args.container is not None:
+            if not args.keeptmp:
+                print("Cleaning up temp dirs")
+                rmtree(tempdir)
+            else:
+                print("--keeptmp flag detected. \
+                       The template files can be found in %s" % tempdir)
 
 
 def _main():
