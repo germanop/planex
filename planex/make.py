@@ -45,7 +45,7 @@ import planex.util
 def cmd_builddep(spec, args):
     print "builddep"
     #planex.util.run(["yum-builddep", spec.path])
-    
+
     #
     # Ewww. rpmbuild gets upset if SourceN doesn't exist even if doing
     # short circuit build.  Add empty/dummy sources to keep it happy.
@@ -100,10 +100,10 @@ def parse_args_or_exit(argv=None):
     planex.util.add_common_parser_options(parser)
     subparsers = parser.add_subparsers()
 
-    builddep_parser = subparsers.add_parser("builddep");
+    builddep_parser = subparsers.add_parser("builddep")
     builddep_parser.add_argument("package", help="package name")
     builddep_parser.set_defaults(cmd=cmd_builddep)
-    
+
     build_parser = subparsers.add_parser("build")
     build_parser.add_argument("package", help="package name")
     build_parser.set_defaults(cmd=cmd_build)
