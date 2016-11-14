@@ -139,24 +139,22 @@ baseurl = {baseurl}
     return data
 
 
-def add_guilt(flag):
-    """
-    Install guilt in the container if flag is true
-    """
-    # TODO: this should also create a .gitconfig for the container with
-    #       the user's git user/email or add an ENV to create it in entry.sh
-
-    guilt_docker_template = """
-WORKDIR /tmp
-RUN git clone git://repo.or.cz/guilt.git && \
-    cd guilt && \
-    make && \
-    make install && \
-    cd .. && \
-    rm -R -f guilt
-"""
-
-    return guilt_docker_template if flag else ""
+# def add_guilt(flag):
+#     """
+#     Install guilt in the container if flag is true
+#     """
+#     # this should also create a .gitconfig for the container with
+#     # the user's git user/email or add an ENV to create it in entry.sh
+#     guilt_docker_template = """
+# WORKDIR /tmp
+# RUN git clone git://repo.or.cz/guilt.git && \
+#     cd guilt && \
+#     make && \
+#     make install && \
+#     cd .. && \
+#     rm -R -f guilt
+# """
+#     return guilt_docker_template if flag else ""
 
 
 def build_container(args, tempdir, suffix):
@@ -165,7 +163,7 @@ def build_container(args, tempdir, suffix):
     """
     data = {'tempdir': tempdir}
     data = generate_repodata(args, data)
-    data['add-guilt'] = add_guilt(args.guilt)
+    data['add-guilt'] = "# guilt option has been removed"
     data['maintainer'] = user = getpass.getuser()
 
     build_deps = []
@@ -207,7 +205,8 @@ def chroot_new(args):
         prepare_specfiles(args, tempdir)
         copy_configuration_templates(tempdir)
         container_name = build_container(args, tempdir, suffix)
-        start_container(container_name)
+        if not args.buildonly:
+            start_container(container_name)
     except Exception as exn:
         print("Something went wrong: %s" % str(exn))
     finally:
@@ -288,10 +287,12 @@ def parse_args_or_exit(argv=None):
                             help="container name suffix")
     new_parser.add_argument("--keeptmp", action="store_true", default=False,
                             help="keep temporary files")
-    new_parser.add_argument("--guilt", action="store_true", default=False,
-                            help="install guilt in the chroot (git config is \
-                                not yet generated) [likely to be deprecated \
-                                in the near future]")
+    new_parser.add_argument("--buildonly", action="store_true", default=False,
+                            help="build the container image without running it")
+    # new_parser.add_argument("--guilt", action="store_true", default=False,
+    #                         help="install guilt in the chroot (git config is \
+    #                             not yet generated) [likely to be deprecated \
+    #                             in the near future]")
     new_parser.set_defaults(cmd=chroot_new)
 
     argcomplete.autocomplete(parser)
