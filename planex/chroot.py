@@ -153,8 +153,9 @@ def build_container(args, tempdir, suffix):
 
     container_name = "planex-%s-%s" % (user, suffix)
     print("Please wait while '%s' is generated" % container_name)
-    
-    # force-rm is disabled because the intermediate images are needed for caching
+
+    # force-rm is disabled because the intermediate images are needed for
+    # caching
     planex.util.run(["docker", "build", "-t", container_name,  # "--force-rm=true",
                      "-f", "%s/Dockerfile" % tempdir, "."])
     return container_name
@@ -198,6 +199,30 @@ def chroot_run(args):
     start_container(args.container_name)
 
 
+def chroot_list(_):
+    """
+    Entry point for subcommand `list`
+    """
+    user = getpass.getuser()
+    name_prefix = "planex-%s" % user
+    cmd = ["docker", "images", "--format", '{{.Repository}}']
+    run_dict = planex.util.run([cmd])
+
+    if run_dict["rc"] != 0:
+        print("Error: something went wrong with the docker invocation")
+        print("%s" % run_dict["stderr"])
+        sys.exit(run_dict["rc"])
+
+    outs = [img for img in run_dict["stdout"].split()
+            if img.startswith(name_prefix)]
+    if len(outs) == 0:
+        print("No pre-built docker image available for your user")
+    else:
+        print("The following docker images are available:")
+        for img in outs:
+            print(img)
+
+
 def parse_args_or_exit(argv=None):
     """
     Parse command line options
@@ -214,7 +239,12 @@ def parse_args_or_exit(argv=None):
                                              pre-existing docker image")
     run_parser.add_argument("container",
                             help="name of an existing docker image to run")
-    run_parser.set_defaults(func=chroot_run)
+    run_parser.set_defaults(cmd=chroot_run)
+
+    list_parser = subparsers.add_parser("list",
+                                        help="List the available pre-built \
+                                              container images")
+    list_parser.set_defaults(cmd=chroot_list)
 
     new_parser = subparsers.add_parser("new",
                                        help="Create (and run) a container for \
@@ -235,7 +265,7 @@ def parse_args_or_exit(argv=None):
                             help="install guilt in the chroot (git config is \
                                 not yet generated) [likely to be deprecated \
                                 in the near future]")
-    new_parser.set_defaults(func=chroot_new)
+    new_parser.set_defaults(cmd=chroot_new)
 
     argcomplete.autocomplete(parser)
     return parser.parse_args(argv)
