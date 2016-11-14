@@ -3,4 +3,5 @@
   - fix local repo
   - improve planex-make to be able to shortcircuit the RPM creation
   - create tool to download and prepare source is needed
+  - find a way to obtain current epel/centos/baggage/xenserver remote repo urls
   - ???
