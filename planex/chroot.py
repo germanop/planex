@@ -232,7 +232,7 @@ def chroot_list(_):
     user = getpass.getuser()
     name_prefix = "planex-%s" % user
     cmd = ["docker", "images", "--format", '{{.Repository}}']
-    run_dict = planex.util.run([cmd])
+    run_dict = planex.util.run(cmd)
 
     outs = [img for img in run_dict["stdout"].split()
             if img.startswith(name_prefix)]
