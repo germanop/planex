@@ -207,11 +207,6 @@ def chroot_list(_):
     cmd = ["docker", "images", "--format", '{{.Repository}}']
     run_dict = planex.util.run([cmd])
 
-    if run_dict["rc"] != 0:
-        print("Error: something went wrong with the docker invocation")
-        print("%s" % run_dict["stderr"])
-        sys.exit(run_dict["rc"])
-
     outs = [img for img in run_dict["stdout"].split()
             if img.startswith(name_prefix)]
     if len(outs) == 0:
