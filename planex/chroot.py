@@ -20,14 +20,6 @@ import planex.util
 
 from pkg_resources import resource_filename
 
-# TODO:
-#  - generate git config in the repo  <-- bad idea. The user should work from own
-#  - use correct guilt version        <-- (external) environment and use the
-#                                         container only for compilation and test
-#  - prepare SOURCES content
-#  - fix local repo
-#  - improve planex-make to be able to shortcircuit the RPM creation
-#  - ???
 
 def copy_configuration_templates(tempdir):
     """
@@ -37,7 +29,8 @@ def copy_configuration_templates(tempdir):
     copy(resource_filename(__name__, 'yum.conf'), '%s/yum.conf' % tempdir)
     copy(resource_filename(__name__, 'xs.repo'), '%s/xs.repo' % tempdir)
     copy(resource_filename(__name__, 'logging.ini'), '%s/logging.ini' % tempdir)
-    copy(resource_filename(__name__, 'site-defaults.cfg'), '%s/site-defaults.cfg' % tempdir)
+    copy(resource_filename(__name__, 'site-defaults.cfg'),
+         '%s/site-defaults.cfg' % tempdir)
 
     print("Template files copied")
 
@@ -48,7 +41,8 @@ def prepare_specfiles(args, tempdir):
     in the folder /SPECS
     """
 
-    # We do not try..except OSError because the folder should not be present yet
+    # We do not try..except OSError because the folder should not be present
+    # yet
     specdir = "%s/SPECS" % tempdir
     mkdir(specdir)
 
@@ -70,7 +64,7 @@ def create_custom_mock_config(tempdir, custom_mock_repos):
         _mock_custom = _default_cfg_f.read().format(
             defaults=default_repos,
             custom="\n".join(custom_mock_repos)
-            )
+        )
         with open('%s/default.cfg' % tempdir, 'w') as mock_custom_f:
             mock_custom_f.write(_mock_custom)
 
@@ -98,12 +92,16 @@ baseurl = {baseurl}
         # TODO: hardlink the local repo in the current folder and mount it in
         #       the local /REPOS folder
         _baseurl = "file://%s" % args.local
-        dockerfile_repos.append("RUN yum-config-manager -y --add-repo %s" % _baseurl)
-        mock_repos.append(new_repo_template.format(name="local", baseurl=_baseurl))
+        dockerfile_repos.append(
+            "RUN yum-config-manager -y --add-repo %s" % _baseurl)
+        mock_repos.append(new_repo_template.format(
+            name="local", baseurl=_baseurl))
 
     for repo_url in args.remote:
-        dockerfile_repos.append("RUN yum-config-manager -y --add-repo %s" % repo_url)
-        mock_repos.append(new_repo_template.format(name=uuid4().hex[:5], baseurl=repo_url))
+        dockerfile_repos.append(
+            "RUN yum-config-manager -y --add-repo %s" % repo_url)
+        mock_repos.append(new_repo_template.format(
+            name=uuid4().hex[:5], baseurl=repo_url))
 
     data['yum-custom'] = "\n".join(dockerfile_repos)
 
@@ -155,9 +153,10 @@ def build_container(args, tempdir, suffix):
 
     container_name = "planex-%s-%s" % (user, suffix)
     print("Please wait while '%s' is generated" % container_name)
-
-    planex.util.run(["docker", "build", "-t", container_name,
-                     "--force-rm=true", "-f", "%s/Dockerfile" % tempdir, "."])
+    
+    # force-rm is disabled because the intermediate images are needed for caching
+    planex.util.run(["docker", "build", "-t", container_name,  # "--force-rm=true",
+                     "-f", "%s/Dockerfile" % tempdir, "."])
     return container_name
 
 
@@ -170,22 +169,56 @@ def start_container(container_name):
     planex.util.start_container(container_name, path_maps, ("bash",))
 
 
+def chroot_new(args):
+    """
+    Entry point for subcommand `new`.
+    """
+    try:
+        suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
+        tempdir = tempfile.mkdtemp(dir=".")
+        prepare_specfiles(args, tempdir)
+        copy_configuration_templates(tempdir)
+        container_name = build_container(args, tempdir, suffix)
+        start_container(container_name)
+    except Exception as exn:
+        print("Something went wrong: %s" % str(exn))
+    finally:
+        if not args.keeptmp:
+            print("Cleaning up temp dirs")
+            rmtree(tempdir)
+        else:
+            print("--keeptmp flag detected. \
+                  The template files can be found in %s" % tempdir)
+
+
+def chroot_run(args):
+    """
+    Entry point for subcommand `run`.
+    """
+    start_container(args.container_name)
+
+
 def parse_args_or_exit(argv=None):
     """
     Parse command line options
     """
     parser = argparse.ArgumentParser(description="""
-    Start a docker container for developer builds of packages.
+    Create and/or start a docker container for developer builds of packages.
     """)
 
     planex.util.add_common_parser_options(parser)
     subparsers = parser.add_subparsers()
 
-    run_parser = subparsers.add_parser("run")
-    run_parser.add_argument("container", default=None,
+    run_parser = subparsers.add_parser("run",
+                                       help="Run the container using a \
+                                             pre-existing docker image")
+    run_parser.add_argument("container",
                             help="name of an existing docker image to run")
+    run_parser.set_defaults(func=chroot_run)
 
-    new_parser = subparsers.add_parser("new")
+    new_parser = subparsers.add_parser("new",
+                                       help="Create (and run) a container for \
+                                            the developer builds")
     new_parser.add_argument("package", nargs="*",
                             help="path to specfile whose build dependencies \
                                 should be installed in container")
@@ -202,6 +235,7 @@ def parse_args_or_exit(argv=None):
                             help="install guilt in the chroot (git config is \
                                 not yet generated) [likely to be deprecated \
                                 in the near future]")
+    new_parser.set_defaults(func=chroot_new)
 
     argcomplete.autocomplete(parser)
     return parser.parse_args(argv)
@@ -214,26 +248,7 @@ def main(argv):
 
     planex.util.setup_sigint_handler()
     args = parse_args_or_exit(argv)
-    try:
-        if args.container is None:
-            suffix = args.suffix if args.suffix is not None else uuid4().hex[:5]
-            tempdir = tempfile.mkdtemp(dir=".")
-            prepare_specfiles(args, tempdir)
-            copy_configuration_templates(tempdir)
-            container_name = build_container(args, tempdir, suffix)
-        else:
-            container_name = args.container
-        start_container(container_name)
-    except Exception as exn:
-        print("Something went wrong: %s" % str(exn))
-    finally:
-        if args.container is None:
-            if not args.keeptmp:
-                print("Cleaning up temp dirs")
-                rmtree(tempdir)
-            else:
-                print("--keeptmp flag detected. \
-                       The template files can be found in %s" % tempdir)
+    args.cmd(args)
 
 
 def _main():
