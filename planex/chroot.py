@@ -5,19 +5,19 @@ packages.
 from __future__ import print_function
 
 import argparse
+import getpass
 import logging
 import os
 import pipes
 import subprocess
-import getpass
 import sys
 import tempfile
 
-from os import mkdir, path
 from shutil import copy, rmtree
 from uuid import uuid4
 
 import argcomplete
+
 import planex
 import planex.spec
 import planex.util
@@ -48,10 +48,10 @@ def prepare_specfiles(args, tempdir):
     # We do not try..except OSError because the folder should not be present
     # yet
     specdir = "%s/SPECS" % tempdir
-    mkdir(specdir)
+    os.mkdir(specdir)
 
     for specfile in args.package:
-        specname = path.basename(specfile)
+        specname = os.path.basename(specfile)
         copy(specfile, "%s/%s" % (specdir, specname))
 
     print("SPECS folder generated")
