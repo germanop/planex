@@ -222,7 +222,7 @@ def chroot_run(args):
     """
     Entry point for subcommand `run`.
     """
-    start_container(args.container_name)
+    start_container(args.container)
 
 
 def chroot_list(_):
