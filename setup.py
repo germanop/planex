@@ -25,6 +25,7 @@ setup(name='planex',
               'planex-fetch = planex.fetch:_main',
               'planex-init = planex.init:_main',
               'planex-make-srpm = planex.makesrpm:_main',
+              'planex-make = planex.make:_main',
               'planex-manifest = planex.manifest:main',
               'planex-pin = planex.pin:_main'
           ]
