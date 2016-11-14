@@ -167,8 +167,9 @@ def build_container(args, tempdir, suffix):
     data['maintainer'] = user = getpass.getuser()
 
     build_deps = []
-    for spec in args.package:
-        build_deps.append("RUN yum-builddep -y %s" % spec)
+    for specfile in args.package:
+        specname = os.path.basename(specfile)
+        build_deps.append("RUN yum-builddep -y /SPECS/%s" % specname)
     data['build-deps'] = "\n".join(build_deps)
 
     with open(resource_filename(__name__, 'Dockerfile')) as dockerfile_template_f:
