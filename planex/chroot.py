@@ -150,7 +150,7 @@ def build_container(args, tempdir, suffix):
         print("Create Dockerfile on disk: done.")
 
     container_name = "planex-%s-%s" % (user, suffix)
-    print("Please wait while '%s' is generated" % container_name)
+    print("Please wait while '%s' is generated..." % container_name)
 
     # force-rm is disabled because the intermediate images are needed for
     # caching
@@ -184,7 +184,7 @@ def chroot_new(args):
         print("Something went wrong: %s" % str(exn))
     finally:
         if not args.keeptmp:
-            print("Cleaning up temp dirs")
+            print("Cleaning up temp dirs...")
             rmtree(tempdir)
         else:
             print("--keeptmp flag detected. \
